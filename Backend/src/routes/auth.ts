@@ -2,8 +2,8 @@ import { Router } from "express";
 import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
 import prisma from "../db";
-import axios from "../../../Frontend/node_modules/axios";
 import { ensureFreshKeycloakToken } from "../middleware/validateKeycloakBeforeHRM";
+import axios from "axios";
 
 const router = Router();
 
