@@ -30,6 +30,13 @@ export const auth = async (
     const kcToken = req.cookies?.keycloak_token;
     const kcRefresh = req.cookies?.keycloak_refresh_token;
 
+    console.log("Auth Middleware - Tokens:", {
+      hasAppToken: appToken,
+      hasAppRefresh: appRefresh,
+      hasKcToken: kcToken,
+      hasKcRefresh: kcRefresh,
+    });
+
     let appPayload: any = null;
     let keycloakPayload: any = null;
 
@@ -111,7 +118,7 @@ export const auth = async (
     if (!isKeycloakValid && kcRefresh) {
       try {
         const tokenUrl = `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
-
+        console.log("Refreshing Keycloak token...");
         const params = new URLSearchParams();
         params.append("grant_type", "refresh_token");
         params.append("client_id", process.env.KEYCLOAK_CLIENT_ID!);
