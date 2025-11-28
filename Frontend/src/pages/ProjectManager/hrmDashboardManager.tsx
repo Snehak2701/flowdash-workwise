@@ -1,6 +1,7 @@
 import { Layout } from "@/components/Layout";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ThreeDot } from "react-loading-indicators";
 import { useNavigate } from "react-router-dom";
 
 export default function HrmManagerDashboard() {
@@ -26,12 +27,12 @@ export default function HrmManagerDashboard() {
         console.log(res);
 
         const data = await res.json();
-        console.log("the data",data);
+        console.log("the data", data);
 
         if (res.ok && data.redirectUrl) {
           setHrmUrl(data.redirectUrl);
-        } else if(data.error == "Session expired, login again.") {
-          navigate("/login")
+        } else if (data.error == "Session expired, login again.") {
+          navigate("/login");
         }
       } catch (err: any) {
         console.error("Failed to load HRM URL:", err);
@@ -44,16 +45,21 @@ export default function HrmManagerDashboard() {
     loadHrmUrl();
   }, []);
 
-  if (loading) return <p>Loading HRM Dashboard...</p>;
   if (error) return <p className="text-red-600">Error: {error}</p>;
 
   return (
-    <Layout role="manager">
+    <Layout>
       <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center p-0 m-0">
         {loading ? (
-          <div className="flex flex-col items-center justify-center text-gray-600">
-            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
-            <p className="text-sm mt-2">Loading HRM Dashboard...</p>
+          <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+            <ThreeDot
+              variant="bounce"
+              color={["#0000CC", "#D70707"]}
+              size="medium"
+              text=""
+              // Setting a text color for better visibility
+              textColor="#32cd32"
+            />
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center text-red-600">

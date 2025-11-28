@@ -2,6 +2,7 @@ import { Layout } from "@/components/Layout";
 import axios from "axios";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ThreeDot } from "react-loading-indicators";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -17,23 +18,23 @@ export default function HrmDashboard() {
 
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log("fetchUser: ", res.data);
-        setRole(res.data.role.toLowerCase());
-      } catch (err) {
-        console.error("Failed to get user info");
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const res = await axios.get(`${API_BASE_URL}/auth/me`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+  //       console.log("fetchUser: ", res.data);
+  //       setRole(res.data.role.toLowerCase());
+  //     } catch (err) {
+  //       console.error("Failed to get user info");
+  //     }
+  //   };
 
-    fetchUser();
-  }, []);
+  //   fetchUser();
+  // }, []);
 
   useEffect(() => {
     const loadHrmUrl = async () => {
@@ -67,16 +68,22 @@ export default function HrmDashboard() {
     loadHrmUrl();
   }, []);
 
-  if (loading) return <p>Loading HRM Dashboard...</p>;
+  // if (loading) return <p>Loading HRM Dashboard...</p>;
   if (error) return <p className="text-red-600">Error: {error}</p>;
 
   return (
-    <Layout role={role}>
+    <Layout>
       <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center p-0 m-0">
         {loading ? (
-          <div className="flex flex-col items-center justify-center text-gray-600">
-            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
-            <p className="text-sm mt-2">Loading HRM Dashboard...</p>
+          <div className="flex items-center justify-center h-[calc(100vh-80px)]">
+            <ThreeDot
+              variant="bounce"
+              color={["#0000CC", "#D70707"]}
+              size="medium"
+              text=""
+              // Setting a text color for better visibility
+              textColor="#32cd32"
+            />
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center text-red-600">

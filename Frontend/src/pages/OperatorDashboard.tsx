@@ -115,7 +115,7 @@ export default function OperatorDashboard() {
   if (loading) {
     return (
       // 1. Always render the Layout
-      <Layout role="operator">
+      <Layout>
         {/* 2. Center the loader within the content area */}
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <ThreeDot
@@ -145,7 +145,7 @@ export default function OperatorDashboard() {
   );
 
   return (
-    <Layout role="operator">
+    <Layout>
       <div className="space-y-8 min-h-screen">
         {/* Header */}
         <div className="border-b pb-4">

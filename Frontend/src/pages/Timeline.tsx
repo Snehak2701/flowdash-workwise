@@ -664,22 +664,22 @@ export default function EmployeeTaskTimeline() {
   );
   const [role, setRole] = useState(null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/auth/me`);
-        console.log("fetchUser: ", res.data);
-        setRole(res.data.role.toLowerCase());
-      } catch (err) {
-        console.error("Failed to get user info");
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const res = await axios.get(`${API_BASE_URL}/auth/me`);
+  //       console.log("fetchUser: ", res.data);
+  //       setRole(res.data.role.toLowerCase());
+  //     } catch (err) {
+  //       console.error("Failed to get user info");
+  //     }
+  //   };
 
-    fetchUser();
-  }, []);
+  //   fetchUser();
+  // }, []);
 
   return (
-    <Layout role={role}>
+    <Layout>
       <div className="space-y-8 p-6">
         <Card className={`p-6 shadow-lg border-[${COLOR_PRIMARY}]/20`}>
           <Tabs

@@ -721,23 +721,23 @@ export function EmployeeManagerDashboard() {
 
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log("fetchUser: ", res.data);
-        setRole(res.data.role.toLowerCase());
-      } catch (err) {
-        console.error("Failed to get user info");
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const res = await axios.get(`${API_BASE_URL}/auth/me`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+  //       console.log("fetchUser: ", res.data);
+  //       setRole(res.data.role.toLowerCase());
+  //     } catch (err) {
+  //       console.error("Failed to get user info");
+  //     }
+  //   };
 
-    fetchUser();
-  }, []);
+  //   fetchUser();
+  // }, []);
 
   // Fetch Employees with Tasks
   const fetchEmployees = useCallback(async () => {
@@ -861,7 +861,7 @@ export function EmployeeManagerDashboard() {
   // Loading and Error States
   if (loading)
     return (
-      <Layout role={role}>
+      <Layout>
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <ThreeDot
             variant="bounce"
@@ -874,7 +874,7 @@ export function EmployeeManagerDashboard() {
 
   if (error)
     return (
-      <Layout role={role}>
+      <Layout>
         <div className="flex items-center justify-center h-[calc(100vh-80px)] p-6">
           <Card className="w-full max-w-lg p-6 text-center border-red-500 bg-red-50 shadow-xl">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-600" />
@@ -902,7 +902,7 @@ export function EmployeeManagerDashboard() {
     );
 
   return (
-    <Layout role={role}>
+    <Layout>
       <div className="space-y-8 min-h-screen">
         {/* Header and Controls */}
         <div className="flex items-center justify-between border-b pb-4">

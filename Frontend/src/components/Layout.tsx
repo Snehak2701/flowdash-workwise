@@ -3,34 +3,43 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import {
   LayoutDashboard,
-  FolderKanban,
   Users,
   FileText,
   BarChart3,
   LogOut,
   Clock,
   PersonStanding,
-  PersonStandingIcon,
 } from "lucide-react";
+import { useAuth } from "@/pages/AuthContext";
 
 interface LayoutProps {
   children: ReactNode;
-  role?: "manager" | "operator" | "project_manager";
 }
 
-export const Layout = ({ children, role }: LayoutProps) => {
+export const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, loading, setUser } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("token");
-    navigate("/");
+  // ✅ Stop flicker
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (!user) return <div className="p-6">Unauthorized</div>;
+
+  const role = user.role.toLowerCase();
+  const handleLogout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error(err);
+    }
+    setUser(null);
+    navigate("/login");
   };
 
   const getNavItems = () => {
-    if (!role) return [];
-
     const common = [
       { icon: LayoutDashboard, label: "Dashboard", path: `/${role}` },
     ];
@@ -38,23 +47,20 @@ export const Layout = ({ children, role }: LayoutProps) => {
     if (role === "manager") {
       return [
         ...common,
-        // The path names need to be updated to match the components created earlier
-        { icon: Users, label: "Employees", path: "/tasks" }, // Uses EmployeeManagerDashboard
+        { icon: Users, label: "Employees", path: "/tasks" },
         { icon: Clock, label: "My Task", path: "/timesheet" },
-        { icon: BarChart3, label: "Performance", path: "/performance" }, // Uses EmployeePerformanceDashboard
-        { icon: FileText, label: "Reports", path: "/manager/reports" }, // Uses TeamReportsDashboard
-        { icon: PersonStandingIcon, label: "My HRM", path: "/manager/hrm" }, // Uses TeamReportsDashboard
+        { icon: BarChart3, label: "Performance", path: "/performance" },
+        { icon: FileText, label: "Reports", path: "/manager/reports" },
+        { icon: PersonStanding, label: "My HRM", path: "/manager/hrm" },
       ];
     }
 
-      if (role === "project_manager") {
+    if (role === "project_manager") {
       return [
         ...common,
-        // The path names need to be updated to match the components created earlier
-        { icon: Users, label: "Managers", path: "/tasks" }, // Uses EmployeeManagerDashboard
-        { icon: BarChart3, label: "Performance", path: "/performance" }, // Uses EmployeePerformanceDashboard
-        { icon: FileText, label: "Reports", path: "/manager/reports" }, // Uses TeamReportsDashboard
-        // { icon: PersonStandingIcon, label: "My HRM", path: "/manager/hrm" }, // Uses TeamReportsDashboard
+        { icon: Users, label: "Managers", path: "/tasks" },
+        { icon: BarChart3, label: "Performance", path: "/performance" },
+        { icon: FileText, label: "Reports", path: "/manager/reports" },
       ];
     }
 
@@ -95,7 +101,7 @@ export const Layout = ({ children, role }: LayoutProps) => {
                 <div
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium cursor-pointer transition-all duration-200 ${
                     isActive
-                      ? "bg-white text-[#2a00b7]" // active: white background, blue text
+                      ? "bg-white text-[#2a00b7]"
                       : "text-white hover:bg-white/10"
                   }`}
                 >
@@ -117,7 +123,7 @@ export const Layout = ({ children, role }: LayoutProps) => {
           })}
         </nav>
 
-        {/* Footer Section */}
+        {/* Footer */}
         <div className="border-t border-white/20 p-4">
           <div className="bg-white/10 rounded-lg p-3 text-sm mb-3">
             <div className="flex items-center gap-2">
@@ -125,7 +131,7 @@ export const Layout = ({ children, role }: LayoutProps) => {
               <span className="capitalize">{role}</span>
             </div>
             <p className="text-xs text-white/70 truncate">
-              {localStorage.getItem("userEmail")}
+              {user.email}
             </p>
           </div>
           <Button
@@ -141,7 +147,13 @@ export const Layout = ({ children, role }: LayoutProps) => {
 
       {/* Main Content */}
       <main className="lg:ml-64 min-h-screen">
-        <div className={location.pathname.includes("/hrm") ? "pt-6 pl-2 pr-6" : "p-8"}>
+        <div
+          className={
+            location.pathname.includes("/hrm")
+              ? "pt-6 pl-2 pr-6"
+              : "p-8"
+          }
+        >
           {children}
         </div>
       </main>

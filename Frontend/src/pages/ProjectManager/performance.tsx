@@ -248,23 +248,23 @@ export default function EmployeePerformanceDashboard() {
   const [role, setRole] = useState(null);
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log("fetchUser: ", res.data);
-        setRole(res.data.role.toLowerCase());
-      } catch (err) {
-        console.error("Failed to get user info");
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const res = await axios.get(`${API_BASE_URL}/auth/me`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+  //       console.log("fetchUser: ", res.data);
+  //       setRole(res.data.role.toLowerCase());
+  //     } catch (err) {
+  //       console.error("Failed to get user info");
+  //     }
+  //   };
 
-    fetchUser();
-  }, []);
+  //   fetchUser();
+  // }, []);
 
   const fetchEmployees = async () => {
     try {
@@ -341,7 +341,7 @@ export default function EmployeePerformanceDashboard() {
   const primaryBgStyle = { backgroundColor: COLOR_PRIMARY };
 
   return (
-    <Layout role={role}>
+    <Layout>
       <div className="space-y-8 min-h-screen ">
         {/* Header and Total Employees Card */}
         <div className="flex items-center justify-between border-b pb-4">

@@ -63,6 +63,7 @@ export default function ManagerDashboard() {
         });
         if (!res.ok) throw new Error("Failed to fetch dashboard data");
         const data = await res.json();
+        console.log(data)
         setDashboardData(data);
         setLoading(false);
       } catch (error) {
@@ -76,7 +77,7 @@ export default function ManagerDashboard() {
   if (loading) {
     return (
       // 1. Always render the Layout
-      <Layout role="manager">
+      <Layout>
         {/* 2. Center the loader within the content area */}
         <div className="flex items-center justify-center h-[calc(100vh-80px)]"> 
           <ThreeDot 
@@ -91,7 +92,7 @@ export default function ManagerDashboard() {
       </Layout>
     );
   }
-  if (!dashboardData) return <Layout role="manager">
+  if (!dashboardData) return <Layout>
       <div className="flex items-center justify-center h-[calc(100vh-80px)] p-6">
         <Card className="w-full max-w-lg p-6 text-center border-red-500 bg-red-50 shadow-xl">
           <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-600" />
@@ -123,7 +124,7 @@ export default function ManagerDashboard() {
   } = dashboardData;
 
   return (
-    <Layout role="manager">
+    <Layout>
     <div className="space-y-8 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between border-b pb-4">

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Users, BarChart3, Lock, LogIn, Loader2 } from "lucide-react"; // Added Lock, LogIn, Loader2
+import { useAuth } from "./AuthContext";
 
 // --- Colors based on inspiration ---
 const COLOR_PRIMARY = "#0000cc";
@@ -18,6 +19,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setUser } = useAuth();
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -47,8 +49,6 @@ export default function Login() {
 
       const data = await res.json();
 
-      console.log(data)
-
       if (!res.ok) {
         throw new Error(data.message || "Login failed");
       }
@@ -63,10 +63,14 @@ export default function Login() {
         description: `Welcome back, ${data.email}!`,
       });
 
-      console.log(data.role)
+      setUser({
+      id: data.userId,
+      email: data.email,
+      role: data.role.toLowerCase(),
+    });
 
       // Redirect to dashboard
-      navigate(`/${data.role}`);
+      navigate(`/${data.role.toLowerCase()}`);
     } catch (err: any) {
       toast({
         title: "Login Failed",
