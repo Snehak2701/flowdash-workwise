@@ -75,4 +75,43 @@ router.get("/ManagerTasks", auth, async (req, res) => {
   }
 });
 
+// Employment Assignment
+
+//* Get the user and Manager list
+router.get("/Manager_employee_list", auth, async (req, res) =>{
+  const userId = req.user!.id;
+
+  try {
+    const managers = await prisma.employee.findMany({
+      where:{
+        managerId: userId
+      },
+      select:{
+        name: true,
+        roleTitle: true,
+        department: true,
+
+        user:{
+          select:{
+            id: true,
+
+            ManagerEmployees:{
+              select:{
+                id:true,
+                name:true,
+                roleTitle:true,
+                department:true,
+                status: true
+              }
+            }
+          }
+        }
+      }
+    })
+    res.status(200).json({managers});
+  } catch (error: any) {
+    res.status(500).json({error: error})
+  }
+})
+
 export default router;

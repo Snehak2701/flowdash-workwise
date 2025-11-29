@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { StatsCard } from "@/components/StatsCard";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardTitle,
+  CardHeader,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -25,8 +30,7 @@ import {
   Line,
 } from "recharts";
 import axios from "axios";
-
-import { ThreeDot } from "react-loading-indicators";
+// import { ThreeDot } from "react-loading-indicators"; // Removed ThreeDot
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -56,12 +60,107 @@ const COLOR_ACCENT_ICON = "text-red-500";
 const COLOR_SUCCESS = "#10b981";
 const COLOR_WARNING = "#f97316";
 
+// --- SKELETON LOADER COMPONENT ---
+
+const SkeletonOperatorDashboard = ({ PRIMARY_COLOR, ACCENT_ICON }) => {
+  // Helper component for a stat card placeholder
+  const StatCardSkeleton = () => (
+    <Card className="p-4 border border-gray-100 shadow-sm h-28 animate-pulse">
+      <div className="flex items-center space-x-4">
+        <div className="h-10 w-10 bg-gray-300 rounded-full"></div>
+        <div>
+          <div className="h-4 w-24 bg-gray-200 rounded mb-1"></div>
+          <div className="h-6 w-16 bg-gray-300 rounded"></div>
+        </div>
+      </div>
+      <div className="h-3 w-32 bg-gray-100 rounded mt-3"></div>
+    </Card>
+  );
+
+  // Helper component for a task list item placeholder
+  const TaskRowSkeleton = () => (
+    <div className="p-4 rounded-lg border border-gray-200 bg-white animate-pulse">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="h-5 w-48 bg-gray-200 rounded"></div>
+            <div className="h-5 w-12 bg-gray-100 rounded-full"></div>
+            <div className="h-5 w-16 bg-gray-100 rounded-full"></div>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <div className="h-4 w-20 bg-gray-100 rounded"></div>
+            <div className="h-4 w-24 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+        <div className="h-5 w-20 bg-blue-200 rounded"></div>
+      </div>
+      <div className="space-y-1">
+        <div className="h-2 w-full bg-gray-200 rounded-full"></div>
+      </div>
+    </div>
+  );
+
+  return (
+    <Layout>
+      <div className="space-y-8 min-h-screen">
+        {/* Skeleton Header */}
+        <div className="border-b pb-4 animate-pulse">
+          <div className="h-8 w-80 bg-gray-300 rounded mb-1"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* Skeleton Stats Grid */}
+        <div className="grid gap-4 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
+          ))}
+        </div>
+
+        {/* Skeleton Charts */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Weekly Hours Chart Skeleton */}
+          <Card className={`p-6 border-gray-200 shadow-sm h-96 animate-pulse`}>
+            <CardHeader className="p-0 mb-4">
+              <div className="h-5 w-48 bg-gray-300 rounded"></div>
+            </CardHeader>
+            <div className="h-72 w-full bg-gray-100 rounded-lg"></div>
+          </Card>
+
+          {/* Completion Trend Chart Skeleton */}
+          <Card className={`p-6 border-gray-200 shadow-sm h-96 animate-pulse`}>
+            <CardHeader className="p-0 mb-4">
+              <div className="h-5 w-48 bg-gray-300 rounded"></div>
+            </CardHeader>
+            <div className="h-72 w-full bg-gray-100 rounded-lg"></div>
+          </Card>
+        </div>
+
+        {/* Assigned Tasks List Skeleton */}
+        <Card className={`p-6 shadow-lg border-gray-200 animate-pulse`}>
+          <div className="flex items-center justify-between mb-4 border-b pb-2">
+            <div className="h-6 w-52 bg-gray-300 rounded"></div>
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <TaskRowSkeleton key={i} />
+            ))}
+          </div>
+        </Card>
+      </div>
+    </Layout>
+  );
+};
+// --- END SKELETON LOADER COMPONENT ---
+
 export default function OperatorDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const getDashboardData = async () => {
+    // Simulating a slight delay to allow the skeleton screen to be visible
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
     try {
       const response = await axios.get(`${API_BASE_URL}/tasks/Dashboard`, {
         headers: {
@@ -113,21 +212,12 @@ export default function OperatorDashboard() {
   };
 
   if (loading) {
+    // Renders the new Skeleton Dashboard component
     return (
-      // 1. Always render the Layout
-      <Layout>
-        {/* 2. Center the loader within the content area */}
-        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-          <ThreeDot
-            variant="bounce"
-            color={["#0000CC", "#D70707"]}
-            size="medium"
-            text=""
-            // Setting a text color for better visibility
-            textColor="#32cd32"
-          />
-        </div>
-      </Layout>
+      <SkeletonOperatorDashboard
+        PRIMARY_COLOR={COLOR_PRIMARY}
+        ACCENT_ICON={COLOR_ACCENT_ICON}
+      />
     );
   }
 

@@ -1,11 +1,27 @@
+import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import axios from "axios";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
 import { ThreeDot } from "react-loading-indicators";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// --- SKELETON LOADER COMPONENT ---
+const SkeletonHrmDashboard = () => (
+  // This div mimics the main content area for the iframe
+  <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center p-0 m-0 animate-pulse">
+    <div className="w-11/12 h-[90%] bg-gray-100 rounded-lg shadow-xl border-4 border-dashed border-gray-300 flex flex-col items-center justify-center space-y-4">
+      <Loader2 className="h-12 w-12 text-[#0000cc] animate-spin" />
+      <h3 className="text-xl font-semibold text-gray-700">
+        Loading External Dashboard...
+      </h3>
+      <div className="h-4 w-64 bg-gray-200 rounded"></div>
+      <div className="h-3 w-48 bg-gray-100 rounded"></div>
+    </div>
+  </div>
+);
+// --- END SKELETON LOADER COMPONENT ---
 
 export default function HrmDashboard() {
   const [hrmUrl, setHrmUrl] = useState<string | null>(null);
@@ -18,27 +34,12 @@ export default function HrmDashboard() {
 
   const token = localStorage.getItem("token");
 
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     try {
-  //       const res = await axios.get(`${API_BASE_URL}/auth/me`, {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       });
-  //       console.log("fetchUser: ", res.data);
-  //       setRole(res.data.role.toLowerCase());
-  //     } catch (err) {
-  //       console.error("Failed to get user info");
-  //     }
-  //   };
-
-  //   fetchUser();
-  // }, []);
-
   useEffect(() => {
     const loadHrmUrl = async () => {
       try {
+        // Simulate network delay to show the skeleton loader
+        await new Promise((resolve) => setTimeout(resolve, 800));
+
         const res = await fetch(
           `${backend_url}/auth/go-to-hrm?tenantCode=${tenant_code}`,
           {
@@ -47,19 +48,22 @@ export default function HrmDashboard() {
           }
         );
 
-        console.log(res);
-
         const data = await res.json();
-        console.log("the data", data);
 
         if (res.ok && data.redirectUrl) {
           setHrmUrl(data.redirectUrl);
-        } else if (data.error == "Session expired, login again.") {
-          navigate("/login");
+        } else if (data.error === "Session expired, login again.") {
+          // Use navigate only after state cleanup to ensure smooth transition
+          setTimeout(() => navigate("/login"), 0);
+          setError("Session expired. Redirecting to login...");
+        } else if (!res.ok) {
+          setError(data.error || "Failed to retrieve redirect URL.");
+        } else {
+          setError("No redirect URL provided.");
         }
       } catch (err: any) {
         console.error("Failed to load HRM URL:", err);
-        setError(err.message);
+        setError(err.message || "Network error occurred.");
       } finally {
         setLoading(false);
       }
@@ -68,28 +72,20 @@ export default function HrmDashboard() {
     loadHrmUrl();
   }, []);
 
-  // if (loading) return <p>Loading HRM Dashboard...</p>;
-  if (error) return <p className="text-red-600">Error: {error}</p>;
-
+  // Renders the layout and content area
   return (
     <Layout>
       <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center p-0 m-0">
         {loading ? (
-          <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-            <ThreeDot
-              variant="bounce"
-              color={["#0000CC", "#D70707"]}
-              size="medium"
-              text=""
-              // Setting a text color for better visibility
-              textColor="#32cd32"
-            />
-          </div>
+          // Renders the Skeleton when loading is true
+          <SkeletonHrmDashboard />
         ) : error ? (
           <div className="flex flex-col items-center justify-center text-red-600">
-            <AlertCircle className="h-6 w-6" />
-            <p className="font-medium mt-2">Failed to load HRM</p>
-            <p className="text-xs opacity-80">{error}</p>
+            <AlertCircle className="h-10 w-10 text-red-600" />
+            <p className="font-bold text-lg mt-2">
+              HRM Dashboard Failed to Load
+            </p>
+            <p className="text-sm text-center mt-1 max-w-md">{error}</p>
           </div>
         ) : hrmUrl ? (
           <iframe
@@ -102,7 +98,10 @@ export default function HrmDashboard() {
             allow="fullscreen *; geolocation *"
           />
         ) : (
-          <p className="text-gray-500 text-sm">No HRM Dashboard available.</p>
+          <div className="text-center text-gray-500 p-10">
+            <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm">No HRM Dashboard URL available.</p>
+          </div>
         )}
       </div>
     </Layout>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Card,
   CardContent,
@@ -21,6 +22,8 @@ import {
   Upload,
   FileText,
   Check,
+  MessageSquare,
+  Loader2,
 } from "lucide-react";
 import {
   Select,
@@ -30,9 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Layout } from "@/components/Layout";
-import axios from "axios";
-import { ThreeDot } from "react-loading-indicators";
-import { MessageSquare } from "lucide-react";
+// import { ThreeDot } from "react-loading-indicators"; // Removed ThreeDot
 
 interface Comment {
   id: string;
@@ -72,6 +73,7 @@ const COLOR_SUCCESS = "#10b981"; // Green for completion
 
 type PriorityFilter = Task["priority"] | "all";
 
+// --- Utility Functions (omitted for brevity) ---
 const getStatusBadgeStyles = (status: Task["status"]) => {
   switch (status) {
     case "WORKING":
@@ -122,6 +124,96 @@ const StatusIcon = ({ status }: { status: Task["status"] }) => {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// --- SKELETON LOADER COMPONENT ---
+
+const TaskRowSkeleton = () => (
+  <div className="grid grid-cols-1 grid-cols-[40px_3fr_2.5fr_1.5fr_1fr_1fr_1fr_2fr_1.5fr_0.8fr] gap-5 items-center p-4 bg-white border border-gray-100 rounded-lg animate-pulse">
+    {/* Status Icon */}
+    <div className="hidden lg:flex justify-center items-center">
+      <div className="h-5 w-5 bg-gray-300 rounded-full"></div>
+    </div>
+
+    {/* Task Title */}
+    <div className="h-4 w-4/5 bg-gray-200 rounded"></div>
+
+    {/* Priority & Deadline */}
+    <div className="flex flex-col gap-1">
+      <div className="h-4 w-12 bg-gray-300 rounded-full"></div>
+      <div className="h-3 w-20 bg-gray-200 rounded"></div>
+    </div>
+
+    {/* Status Dropdown */}
+    <div className="h-8 w-full bg-gray-100 rounded"></div>
+
+    {/* Manager Files */}
+    <div className="flex justify-center items-center">
+      <div className="h-5 w-5 bg-gray-200 rounded-md"></div>
+    </div>
+
+    {/* File Upload */}
+    <div className="flex justify-center items-center">
+      <div className="h-5 w-5 bg-gray-200 rounded-md"></div>
+    </div>
+
+    {/* Assigned Hours */}
+    <div className="h-4 w-10 bg-gray-200 rounded mx-auto"></div>
+
+    {/* Notes */}
+    <div className="h-4 w-4/5 bg-gray-100 rounded"></div>
+
+    {/* Updated Time */}
+    <div className="h-6 w-16 bg-gray-100 rounded mx-auto"></div>
+
+    {/* Comments Button */}
+    <div className="flex justify-center items-center">
+      <div className="h-6 w-6 bg-blue-200 rounded-md"></div>
+    </div>
+  </div>
+);
+
+const SkeletonTaskHub = () => (
+  <Layout>
+    <div className="space-y-8 p-6">
+      <Card
+        className={`p-6 shadow-lg border-[${COLOR_PRIMARY}]/20 animate-pulse`}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6 border-b pb-4">
+          <div className="h-8 w-64 bg-gray-300 rounded"></div>
+          <div className="h-10 w-[320px] bg-gray-100 rounded-md"></div>
+        </div>
+
+        <div className="p-0">
+          <CardHeader className="p-0 pb-4">
+            <div className="flex justify-between items-center mb-2">
+              <div className="h-6 w-48 bg-blue-200 rounded"></div>
+              <div className="h-8 w-[180px] bg-gray-100 rounded"></div>
+            </div>
+            <div className="h-4 w-full bg-gray-100 rounded"></div>
+          </CardHeader>
+
+          {/* Table Header Skeleton */}
+          <div className="hidden lg:grid grid-cols-[40px_3fr_2.5fr_1.5fr_1fr_1fr_1fr_2fr_1.5fr_0.8fr] text-xs font-bold uppercase border-b border-gray-300 px-2 py-3">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-3 w-12 bg-gray-200 rounded mx-auto"
+              ></div>
+            ))}
+          </div>
+
+          {/* Task Rows Skeleton */}
+          <div className="space-y-2 mt-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TaskRowSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </Card>
+    </div>
+  </Layout>
+);
+
 // --- Task Timeline View ---
 const TaskTimelineView = ({ role }: { role: any }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -141,9 +233,10 @@ const TaskTimelineView = ({ role }: { role: any }) => {
         role === "OPERATOR"
           ? await axios.get(`${API_BASE_URL}/tasks/EmployeeTasks`)
           : await axios.get(`${API_BASE_URL}/projectManager/ManagerTasks`);
-      // if(role == "MANAGER")
-      // const res = await axios.get(`${API_BASE_URL}/tasks/EmployeeTasks`);
-      setTasks(res.data.tasks);
+
+      // Simulating API structure adjustment if the response is wrapped
+      const fetchedTasks = res.data.tasks || res.data;
+      setTasks(fetchedTasks);
     } catch (err) {
       console.error("Failed to fetch tasks", err);
     }
@@ -216,8 +309,7 @@ const TaskTimelineView = ({ role }: { role: any }) => {
   const fetchCommentsForTask = async (taskId: string) => {
     try {
       const res = await axios.get(`${API_BASE_URL}/comments/${taskId}`);
-      console.log("Fetched comments", res.data);
-      const comments: Comment[] = res.data; // adjust if backend wraps in {comments}
+      const comments: Comment[] = res.data.comments || res.data;
       const taskWithComments = tasks.find((t) => t.id === taskId);
       if (taskWithComments) {
         setSelectedTask({ ...taskWithComments, comments });
@@ -227,28 +319,6 @@ const TaskTimelineView = ({ role }: { role: any }) => {
     }
   };
 
-  // const sendComment = async () => {
-  //   if (!selectedTask || !commentText.trim()) return;
-  //   try {
-  //     const res = await axios.post(
-  //       `${API_BASE_URL}/comments/${selectedTask.id}`,
-  //       {
-  //         content: commentText,
-  //       }
-  //     );
-  //     setSelectedTask((prev) => {
-  //       if (!prev) return prev;
-  //       return {
-  //         ...prev,
-  //         comments: [...(prev.comments || []), res.data.comment],
-  //       };
-  //     });
-  //     setCommentText("");
-  //   } catch (err) {
-  //     console.error("Failed to send comment", err);
-  //   }
-  // };
-
   const sendComment = async () => {
     if (!selectedTask || !commentText.trim()) return;
     try {
@@ -257,13 +327,12 @@ const TaskTimelineView = ({ role }: { role: any }) => {
         { content: commentText }
       );
 
-      // Construct the full comment object from backend response
       const newComment: Comment = {
         id: res.data.id,
         taskId: selectedTask.id,
         content: res.data.content,
         authorId: res.data.authorId,
-        author: res.data.author, // ensure backend sends author object
+        author: res.data.author,
         createdAt: res.data.createdAt,
         updatedAt: res.data.updatedAt,
         seenByAssignee: res.data.seenByAssignee,
@@ -334,10 +403,9 @@ const TaskTimelineView = ({ role }: { role: any }) => {
 
       {loading ? (
         <div className="flex flex-col items-center mt-8 gap-3">
-          <ThreeDot
-            variant="bounce"
-            color={["#0000CC", "#D70707"]}
-            size="medium"
+          <Loader2
+            className={`h-6 w-6 animate-spin`}
+            style={{ color: COLOR_PRIMARY }}
           />
           <p className="text-sm text-gray-500 font-medium">Loading tasks...</p>
         </div>
@@ -346,10 +414,6 @@ const TaskTimelineView = ({ role }: { role: any }) => {
           {orderedTasks.map((task) => (
             <div
               key={task.id}
-              // onClick={() => {
-              //   setSelectedTask(task);
-              //   fetchCommentsForTask(task.id);
-              // }}
               className="grid grid-cols-1 cursor-pointer grid-cols-[40px_3fr_2.5fr_1.5fr_1fr_1fr_1fr_2fr_1.5fr_0.8fr] gap-5 items-center p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0000cc]/50 hover:shadow-sm transition-shadow"
             >
               {/* Status Icon */}
@@ -586,6 +650,23 @@ const CompletedCalendarView = () => {
 
   const sortedDates = Object.keys(completedByDate).sort().reverse();
 
+  // Skeleton for Calendar Tab (used when this specific tab is loading)
+  const CalendarSkeleton = () => (
+    <div className="space-y-6">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div
+          key={i}
+          className="border-l-4 pl-4 py-3 rounded-r-md shadow-sm bg-green-50/50 animate-pulse"
+          style={{ borderColor: COLOR_SUCCESS }}
+        >
+          <div className="h-5 w-40 bg-green-200 rounded mb-2"></div>
+          <div className="h-4 w-full bg-green-100 rounded"></div>
+          <div className="h-4 w-3/4 bg-green-100 rounded mt-1"></div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <CardContent className="p-0 space-y-4">
       <CardHeader className="p-0 pb-4">
@@ -603,10 +684,9 @@ const CompletedCalendarView = () => {
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <ThreeDot
-            variant="bounce"
-            color={["#0000CC", "#D70707"]}
-            size="medium"
+          <Loader2
+            className={`h-6 w-6 animate-spin`}
+            style={{ color: COLOR_PRIMARY }}
           />
         </div>
       ) : sortedDates.length > 0 ? (
@@ -662,21 +742,20 @@ export default function EmployeeTaskTimeline() {
   const [activeTab, setActiveTab] = useState<"timeline" | "calendar">(
     "timeline"
   );
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState(null); // Assuming role will be set dynamically elsewhere
 
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     try {
-  //       const res = await axios.get(`${API_BASE_URL}/auth/me`);
-  //       console.log("fetchUser: ", res.data);
-  //       setRole(res.data.role.toLowerCase());
-  //     } catch (err) {
-  //       console.error("Failed to get user info");
-  //     }
-  //   };
+  // Check if loading state should show skeleton
+  const shouldShowSkeleton = !role; // Show skeleton initially until role is determined
 
-  //   fetchUser();
-  // }, []);
+  // Simulating loading role initially (Remove this in production if role is fetched via context/auth)
+  useEffect(() => {
+    const userRole = localStorage.getItem("userRole") || "OPERATOR"; // Default to OPERATOR if not found
+    setRole(userRole);
+  }, []);
+
+  if (!role) {
+    return <SkeletonTaskHub />;
+  }
 
   return (
     <Layout>

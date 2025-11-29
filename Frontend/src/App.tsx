@@ -16,6 +16,7 @@ import HrmDashboard from "./pages/hrmDashboard";
 import HrmManagerDashboard from "./pages/ProjectManager/hrmDashboardManager";
 import MainDashboard from "./pages/MainManager/mainDashboard";
 import { AuthProvider } from "./pages/AuthContext";
+import AssignmentDashboard from "./pages/MainManager/EmployeeAssignment";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/manager/reports" element={<TeamReportsDashboard />} />
             <Route path="/manager/hrm" element={<HrmManagerDashboard />} />
             <Route path="/operator" element={<OperatorDashboard />} />
+            <Route path="/project_manager/employee-assignment" element={<AssignmentDashboard />} />
             <Route path="/timesheet" element={<EmployeeTaskTimeline />} />
             <Route path="/operator/hrm" element={<HrmDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

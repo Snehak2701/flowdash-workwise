@@ -15,6 +15,7 @@ import {
   Target,
   Trophy,
   Zap,
+  Loader2,
 } from "lucide-react";
 import {
   BarChart,
@@ -26,15 +27,14 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
   RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
 } from "recharts";
 import { Layout } from "@/components/Layout";
 import { toast } from "react-hot-toast";
-import { Loader2 } from "lucide-react";
-import { Button } from "react-day-picker";
+import { Button } from "react-day-picker"; // Assuming this is correct import, though typically Button is from components/ui/button
 
 // --- Colors based on inspiration ---
 const COLOR_PRIMARY = "#0000cc";
@@ -42,7 +42,7 @@ const COLOR_ACCENT_ICON = "text-red-500";
 const COLOR_SUCCESS = "#10b981"; // Green for completion
 const COLOR_WARNING = "#f97316"; // Orange for engagement
 
-// --- Types (Unchanged) ---
+// --- Types (omitted for brevity) ---
 interface PerformanceData {
   hours: number;
   hoursChange?: number;
@@ -70,7 +70,115 @@ interface Employee {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// --- Helper Components ---
+// --- SKELETON LOADER COMPONENTS ---
+
+const EmployeeListSkeletonItem = () => (
+  <div className="p-4 rounded-lg flex items-center gap-3 bg-gray-50/50 animate-pulse border border-gray-200">
+    <User className={`h-5 w-5 text-gray-400`} />
+    <div>
+      <div className="h-4 w-32 bg-gray-200 rounded mb-1"></div>
+      <div className="h-3 w-20 bg-gray-100 rounded"></div>
+    </div>
+    <ArrowRight className="h-4 w-4 ml-auto text-gray-300" />
+  </div>
+);
+
+const DetailStatCardSkeleton = () => (
+  <Card className="p-4 h-24 flex items-center justify-between border-[#0000cc]/20 shadow-sm animate-pulse">
+    <div className="space-y-2">
+      <div className="h-4 w-28 bg-gray-200 rounded"></div>
+      <div className="h-6 w-16 bg-gray-300 rounded"></div>
+    </div>
+    <div className="h-6 w-6 bg-red-200 rounded-full"></div>
+  </Card>
+);
+
+const SkeletonEmployeePerformanceDashboard = () => (
+  <Layout>
+    <div className="space-y-8 min-h-screen">
+      {/* Skeleton Header and Total Employees Card */}
+      <div className="flex items-center justify-between border-b pb-4 animate-pulse">
+        <div>
+          <div className="h-8 w-80 bg-gray-300 rounded"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded mt-2"></div>
+        </div>
+        <Card
+          className={`p-4 shadow-md h-20 w-56`}
+          style={{
+            backgroundColor: `${COLOR_PRIMARY}1A`,
+            borderColor: `${COLOR_PRIMARY}4D`,
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <Users className={`h-6 w-6 ${COLOR_ACCENT_ICON}`} />
+            <div>
+              <div className="h-4 w-28 bg-gray-300 rounded"></div>
+              <div className="h-6 w-10 bg-gray-400 rounded mt-1"></div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Main Content Grid Skeleton */}
+      <div className="grid lg:grid-cols-3 xl:grid-cols-4 gap-6 h-[calc(100vh-160px)]">
+        {/* Employee List Skeleton */}
+        <Card
+          className={`lg:col-span-1 p-4 flex flex-col shadow-lg border-[#0000cc]/20`}
+        >
+          <CardHeader className="px-2 pt-1 pb-4 animate-pulse">
+            <div className="h-6 w-40 bg-gray-300 rounded"></div>
+            <div className="h-10 w-full bg-gray-100 rounded mt-2"></div>
+          </CardHeader>
+          <div className="space-y-2 flex-1 overflow-y-auto pr-2">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <EmployeeListSkeletonItem key={i} />
+            ))}
+          </div>
+        </Card>
+
+        {/* Detail View Skeleton */}
+        <Card
+          className={`lg:col-span-2 xl:col-span-3 h-full flex flex-col p-6 overflow-y-auto shadow-lg border-[#0000cc]/20 animate-pulse`}
+        >
+          {/* Header */}
+          <div className="mb-6 border-b pb-3">
+            <div className="h-8 w-64 bg-gray-300 rounded"></div>
+            <div className="h-5 w-40 bg-gray-200 rounded mt-2"></div>
+          </div>
+
+          {/* Top Stats Skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <DetailStatCardSkeleton key={i} />
+            ))}
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid lg:grid-cols-2 gap-6 mb-6">
+            {/* Weekly Hours */}
+            <Card className="p-6 h-72 border-gray-200 shadow-sm">
+              <div className="h-5 w-48 bg-gray-200 rounded mb-4"></div>
+              <div className="h-52 w-full bg-gray-100 rounded"></div>
+            </Card>
+            {/* Completion Trend */}
+            <Card className="p-6 h-72 border-gray-200 shadow-sm">
+              <div className="h-5 w-48 bg-gray-200 rounded mb-4"></div>
+              <div className="h-52 w-full bg-gray-100 rounded"></div>
+            </Card>
+          </div>
+
+          {/* Radar Chart Skeleton */}
+          <Card className="p-6 h-96 mb-6 border-gray-200 shadow-sm">
+            <div className="h-5 w-52 bg-gray-200 rounded mb-4"></div>
+            <div className="h-72 w-full bg-gray-100 rounded"></div>
+          </Card>
+        </Card>
+      </div>
+    </div>
+  </Layout>
+);
+
+// --- Helper Components (Unchanged, included for completeness) ---
 const PerformanceStats = ({ data }: { data: PerformanceData }) => {
   const statItems: any = [
     {
@@ -78,7 +186,7 @@ const PerformanceStats = ({ data }: { data: PerformanceData }) => {
       value: `${data.hours}h`,
       change: data.hoursChange ? `+${data.hoursChange}%` : "",
       icon: Clock,
-      color: "text-red-500",
+      color: COLOR_ACCENT_ICON,
       valueColor: COLOR_PRIMARY,
       trendColor: "text-blue-600",
     },
@@ -87,7 +195,7 @@ const PerformanceStats = ({ data }: { data: PerformanceData }) => {
       value: `${data.completionRate}%`,
       change: data.completionChange ? `+${data.completionChange}%` : "",
       icon: CheckCircle2,
-      color: "text-red-500",
+      color: COLOR_ACCENT_ICON,
       valueColor: COLOR_SUCCESS,
       trendColor: "text-green-600",
     },
@@ -96,7 +204,7 @@ const PerformanceStats = ({ data }: { data: PerformanceData }) => {
       value: `${data.engagement}%`,
       change: data.engagementChange ? `+${data.engagementChange}%` : "",
       icon: TrendingUp,
-      color: "text-red-500",
+      color: COLOR_ACCENT_ICON,
       valueColor: COLOR_WARNING,
       trendColor: "text-orange-600",
     },
@@ -105,7 +213,7 @@ const PerformanceStats = ({ data }: { data: PerformanceData }) => {
       value: `${data.rating}/5`,
       change: data.ratingChange ? `Top ${data.ratingChange}%` : "",
       icon: Target,
-      color: "text-red-500",
+      color: COLOR_ACCENT_ICON,
       valueColor: COLOR_PRIMARY,
       trendColor: "text-purple-600",
     },
@@ -120,7 +228,6 @@ const PerformanceStats = ({ data }: { data: PerformanceData }) => {
         >
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">{item.title}</p>
-            {/* FIX: Use inline style for dynamic custom color to prevent Tailwind parsing issues */}
             <h3
               className="text-2xl font-bold"
               style={{ color: item.valueColor }}
@@ -245,26 +352,7 @@ export default function EmployeePerformanceDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingPerformance, setLoadingPerformance] = useState(false);
-  const [role, setRole] = useState(null);
   const token = localStorage.getItem("token");
-
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     try {
-  //       const res = await axios.get(`${API_BASE_URL}/auth/me`, {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       });
-  //       console.log("fetchUser: ", res.data);
-  //       setRole(res.data.role.toLowerCase());
-  //     } catch (err) {
-  //       console.error("Failed to get user info");
-  //     }
-  //   };
-
-  //   fetchUser();
-  // }, []);
 
   const fetchEmployees = async () => {
     try {
@@ -319,12 +407,10 @@ export default function EmployeePerformanceDashboard() {
     fetchEmployees();
   }, []);
 
-  // --- FIX APPLIED HERE ---
   const filteredEmployees = employees.filter((emp) => {
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return true; // Show all if search is empty
+    if (!term) return true;
 
-    // Safely access properties, defaulting to empty string if null/undefined
     const name = emp.name ?? "";
     const id = emp.id?.toString() ?? "";
     const role = emp.role ?? "";
@@ -335,10 +421,14 @@ export default function EmployeePerformanceDashboard() {
       role.toLowerCase().includes(term)
     );
   });
-  // -------------------------
 
   const primaryStyle = { color: COLOR_PRIMARY };
   const primaryBgStyle = { backgroundColor: COLOR_PRIMARY };
+
+  // --- Conditional Rendering with Skeleton Loader ---
+  if (loading) {
+    return <SkeletonEmployeePerformanceDashboard />;
+  }
 
   return (
     <Layout>
@@ -397,15 +487,7 @@ export default function EmployeePerformanceDashboard() {
               </div>
             </CardHeader>
             <div className="space-y-2 flex-1 overflow-y-auto pr-2">
-              {loading ? (
-                <div className="text-center py-8">
-                  <Loader2
-                    className={`h-6 w-6 animate-spin mx-auto`}
-                    style={primaryStyle}
-                  />
-                  <p className="text-sm text-gray-500 mt-2">Loading Team...</p>
-                </div>
-              ) : filteredEmployees.length === 0 ? (
+              {filteredEmployees.length === 0 ? (
                 <p className="text-center py-4 text-gray-500">
                   No employees found
                   <button

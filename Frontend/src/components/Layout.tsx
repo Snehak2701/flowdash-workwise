@@ -60,6 +60,7 @@ export const Layout = ({ children }: LayoutProps) => {
         ...common,
         { icon: Users, label: "Managers", path: "/tasks" },
         { icon: BarChart3, label: "Performance", path: "/performance" },
+        { icon: PersonStanding, label: "Employee Assign", path: "/project_manager/employee-assignment" },
         { icon: FileText, label: "Reports", path: "/manager/reports" },
       ];
     }
@@ -69,6 +70,7 @@ export const Layout = ({ children }: LayoutProps) => {
         ...common,
         { icon: Clock, label: "My Task", path: "/timesheet" },
         { icon: PersonStanding, label: "My HRM", path: "/operator/hrm" },
+        
       ];
     }
 
