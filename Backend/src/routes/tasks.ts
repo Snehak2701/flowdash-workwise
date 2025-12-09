@@ -18,6 +18,19 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+//! FOR TIME CALCULATION
+
+// const workLogs = await prisma.taskWorkLog.findMany({
+//   where: { taskId }
+// });
+
+// const totalMillis = workLogs.reduce((acc, log) => {
+//   const end = log.endTime ? new Date(log.endTime) : new Date();
+//   return acc + (end.getTime() - new Date(log.startTime).getTime());
+// }, 0);
+
+// const totalHours = (totalMillis / 1000 / 60 / 60).toFixed(2);
+
 // Create task (manager)
 router.post(
   "/create",
@@ -51,10 +64,10 @@ router.post(
 
     if (req.file) {
       const fileName = `${Date.now()}_${req.file.originalname}`;
-      console.log(req.file.mimetype)
+      console.log(req.file.mimetype);
       const { error } = await supabase.storage
         .from("ManagerFiles")
-        .upload(fileName, req.file.buffer,{
+        .upload(fileName, req.file.buffer, {
           contentType: req.file.mimetype,
         });
       if (error) return res.status(500).json({ error: "file upload failed" });
@@ -100,28 +113,97 @@ router.get("/", auth, async (req, res) => {
 });
 
 // Update status (operator updates own; manager can update any)
-router.patch("/:id/status", auth, async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  if (!status) return res.status(400).json({ error: "status required" });
+router.patch("/:taskId/status", auth, async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { status } = req.body;
 
-  if (!id) return res.status(400).json({ error: "task id required" });
+    if (!status) return res.status(400).json({ error: "Status required" });
+    if (!taskId) {
+      return res.status(400).json({ error: "task id required" });
+    }
 
-  const task = await prisma.task.findUnique({ where: { id } });
-  if (!task) return res.status(404).json({ error: "task not found" });
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) return res.status(404).json({ error: "Task not found" });
 
-  const isManager = req.user!.role === "MANAGER";
-  const isOwner = task.assigneeId === req.user!.id;
+    const userId = req.user!.id;
+    const isOwner = task.assigneeId === userId;
+    const isManager =
+      req.user!.role === "MANAGER" || req.user!.role === "PROJECT_MANAGER";
 
-  if (!isManager && !isOwner)
-    return res.status(403).json({ error: "forbidden" });
+    if (!isManager && !isOwner)
+      return res.status(403).json({ error: "Not allowed" });
 
-  const updated = await prisma.task.update({
-    where: { id },
-    data: { status: String(status).toUpperCase() as any },
-  });
+    const newStatus = status.toUpperCase();
+    console.log("Status Change =>", newStatus);
 
-  res.json(updated);
+    // ----------------------------------------
+    // 🚫 Restrict multiple WORKING tasks
+    // ----------------------------------------
+    if (newStatus === "WORKING") {
+      const activeTask = await prisma.task.findFirst({
+        where: {
+          assigneeId: userId,
+          status: "WORKING",
+          id: { not: taskId },
+        },
+      });
+
+      if (activeTask) {
+        return res.status(409).json({
+          error: "Another task is already in progress",
+          runningTask: {
+            id: activeTask.id,
+            title: activeTask.title,
+          },
+        });
+      }
+
+      // ⏱ Start new work session
+      await prisma.taskWorkLog.create({
+        data: {
+          taskId,
+          userId,
+          startTime: new Date(),
+        },
+      });
+    }
+
+    // ----------------------------------------
+    // ⏹ Stop running timer (STUCK or DONE)
+    // ----------------------------------------
+    if (newStatus === "STUCK" || newStatus === "DONE") {
+      await prisma.taskWorkLog.updateMany({
+        where: {
+          taskId,
+          userId,
+          endTime: null,
+        },
+        data: {
+          endTime: new Date(),
+        },
+      });
+    }
+
+    // ----------------------------------------
+    // Update task status in DB
+    // ----------------------------------------
+    const updated = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: newStatus,
+        updatedAt: new Date(),
+      },
+    });
+
+    res.json({
+      message: "Status updated successfully",
+      task: updated,
+    });
+  } catch (err) {
+    console.error("Status Update Error:", err);
+    res.status(500).json({ error: "Failed to update status" });
+  }
 });
 
 // update the priority
@@ -151,58 +233,69 @@ router.patch("/:id/priority", auth, async (req, res) => {
 });
 
 // Transfer task (manager only)
-router.post("/:id/transfer", auth, requireRole("MANAGER", "PROJECT_MANAGER"), async (req, res) => {
-  const { id } = req.params;
-  console.log(id);
-  const { newAssigneeUserId, newEmployeeId } = req.body;
-  let assigneeId = newAssigneeUserId as string | undefined;
+router.post(
+  "/:id/transfer",
+  auth,
+  requireRole("MANAGER", "PROJECT_MANAGER"),
+  async (req, res) => {
+    const { id } = req.params;
+    console.log(id);
+    const { newAssigneeUserId, newEmployeeId } = req.body;
+    let assigneeId = newAssigneeUserId as string | undefined;
 
-  if (!id) return res.status(400).json({ error: "task id required" });
+    if (!id) return res.status(400).json({ error: "task id required" });
 
-  if (!assigneeId && newEmployeeId) {
-    const emp = await prisma.employee.findUnique({
-      where: { id: newEmployeeId },
+    if (!assigneeId && newEmployeeId) {
+      const emp = await prisma.employee.findUnique({
+        where: { id: newEmployeeId },
+      });
+      if (!emp) return res.status(400).json({ error: "invalid employee id" });
+      assigneeId = emp.userId;
+    }
+    if (!assigneeId)
+      return res.status(400).json({ error: "assignee required" });
+
+    const updated = await prisma.task.update({
+      where: { id },
+      data: { assigneeId, status: "TODO" }, // reset to TODO on transfer (matches your UI)
     });
-    if (!emp) return res.status(400).json({ error: "invalid employee id" });
-    assigneeId = emp.userId;
+
+    res.json(updated);
   }
-  if (!assigneeId) return res.status(400).json({ error: "assignee required" });
+);
 
-  const updated = await prisma.task.update({
-    where: { id },
-    data: { assigneeId, status: "TODO" }, // reset to TODO on transfer (matches your UI)
-  });
+router.delete(
+  "/:id",
+  auth,
+  requireRole("MANAGER", "PROJECT_MANAGER"),
+  async (req, res) => {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "task id required" });
 
-  res.json(updated);
-});
+    try {
+      const task = await prisma.task.findUnique({ where: { id } });
 
-router.delete("/:id", auth, requireRole("MANAGER", "PROJECT_MANAGER"), async (req, res) => {
-  const { id } = req.params;
-  if (!id) return res.status(400).json({ error: "task id required" });
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
 
-  try {
-    const task = await prisma.task.findUnique({ where: { id } });
+      // Optional: If you want to restrict deletion to certain users (e.g., managers)
+      const userId = req.user?.id; // from verifyToken middleware
+      if (task.createdById !== userId) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this task" });
+      }
 
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
+      await prisma.task.delete({ where: { id } });
+
+      res.status(200).json({ message: "Task deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      res.status(500).json({ message: "Failed to delete task" });
     }
-
-    // Optional: If you want to restrict deletion to certain users (e.g., managers)
-    const userId = req.user?.id; // from verifyToken middleware
-    if (task.createdById !== userId) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this task" });
-    }
-
-    await prisma.task.delete({ where: { id } });
-
-    res.status(200).json({ message: "Task deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting task:", error);
-    res.status(500).json({ message: "Failed to delete task" });
   }
-});
+);
 
 router.get("/Dashboard", auth, requireRole("OPERATOR"), async (req, res) => {
   try {
@@ -353,30 +446,30 @@ router.get("/EmployeeTasks", auth, async (req, res) => {
 // ----------------------------
 // PATCH: Update task status
 // ----------------------------
-router.patch("/:taskId/status", auth, async (req, res) => {
-  try {
-    const { taskId } = req.params;
-    const { status } = req.body;
+// router.patch("/:taskId/status", auth, async (req, res) => {
+//   try {
+//     const { taskId } = req.params;
+//     const { status } = req.body;
 
-    if (!status) {
-      return res.status(400).json({ error: "Status is required" });
-    }
+//     if (!status) {
+//       return res.status(400).json({ error: "Status is required" });
+//     }
 
-    if (!taskId) {
-      return res.status(400).json({ error: "Task ID is required" });
-    }
+//     if (!taskId) {
+//       return res.status(400).json({ error: "Task ID is required" });
+//     }
 
-    const updatedTask = await prisma.task.update({
-      where: { id: taskId },
-      data: { status, updatedAt: new Date() },
-    });
+//     const updatedTask = await prisma.task.update({
+//       where: { id: taskId },
+//       data: { status, updatedAt: new Date() },
+//     });
 
-    res.json({ message: "Status updated", task: updatedTask });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to update task status" });
-  }
-});
+//     res.json({ message: "Status updated", task: updatedTask });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Failed to update task status" });
+//   }
+// });
 
 // ----------------------------
 // POST: Upload Employee File

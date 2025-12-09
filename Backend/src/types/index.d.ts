@@ -4,7 +4,7 @@ declare global {
   namespace Express {
     interface UserJWTPayload {
       id: string;
-      role: "MANAGER" | "OPERATOR";
+      role: "MANAGER" | "OPERATOR" | "PROJECT_MANAGER";
       email: string;
     }
     interface Request {
