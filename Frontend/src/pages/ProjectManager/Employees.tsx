@@ -547,11 +547,10 @@ const TaskCommentPanel = ({
               className={`flex ${isOwnRole ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] sm:max-w-[75%] px-3 py-2 rounded-2xl text-xs sm:text-sm shadow-sm relative ${
-                  isOwnRole
+                className={`max-w-[85%] sm:max-w-[75%] px-3 py-2 rounded-2xl text-xs sm:text-sm shadow-sm relative ${isOwnRole
                     ? "bg-blue-600 text-white rounded-br-none"
                     : "bg-gray-200 text-gray-800 rounded-bl-none"
-                }`}
+                  }`}
               >
                 <p className="break-words">{c.content}</p>
 
@@ -1232,6 +1231,16 @@ export function EmployeeManagerDashboard() {
   // };
 
   const handleSubmitTask = async () => {
+    const today = new Date().toISOString().split("T")[0];
+
+    if (form.dueDate && form.dueDate < today) {
+      toast({
+        title: "Invalid Due Date",
+        description: "Due date cannot be in the past.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!form.title.trim() || !form.assignedHours) {
       toast({
         title: "Error",
@@ -1244,7 +1253,7 @@ export function EmployeeManagerDashboard() {
     setIsCreating(true);
 
     try {
-if (isEditMode && editTask) {
+      if (isEditMode && editTask) {
         // 🔄 EDIT TASK
         const formData = new FormData();
 
@@ -1252,7 +1261,7 @@ if (isEditMode && editTask) {
         formData.append("title", form.title);
         formData.append("priority", form.priority);
         formData.append("assignedHours", form.assignedHours);
-        
+
         // Append optional text fields only if they exist
         if (form.dueDate) formData.append("dueDate", form.dueDate);
         if (form.notes) formData.append("notes", form.notes);
@@ -1450,6 +1459,7 @@ if (isEditMode && editTask) {
                       id="dueDate"
                       name="dueDate"
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
                       value={form.dueDate}
                       onChange={handleFormChange}
                       className="border-gray-300 focus:border-[#0000cc]"
@@ -1552,29 +1562,26 @@ if (isEditMode && editTask) {
               {employees.map((emp) => (
                 <div
                   key={emp.id}
-                  className={`p-3 rounded-lg cursor-pointer flex items-center justify-between transition-all duration-150 text-sm ${
-                    selectedEmployee?.id === emp.id
+                  className={`p-3 rounded-lg cursor-pointer flex items-center justify-between transition-all duration-150 text-sm ${selectedEmployee?.id === emp.id
                       ? "bg-[#0000cc] text-white shadow-md"
                       : "hover:bg-gray-100 border border-gray-200"
-                  }`}
+                    }`}
                   onClick={() => setSelectedEmployee(emp)}
                 >
                   <div className="flex items-center gap-3">
                     <User
-                      className={`h-4 w-4 ${
-                        selectedEmployee?.id === emp.id
+                      className={`h-4 w-4 ${selectedEmployee?.id === emp.id
                           ? "text-red-500"
                           : "text-[#0000cc]"
-                      }`}
+                        }`}
                     />
                     <div>
                       <h4 className="font-semibold leading-none">{emp.name}</h4>
                       <p
-                        className={`text-xs ${
-                          selectedEmployee?.id === emp.id
+                        className={`text-xs ${selectedEmployee?.id === emp.id
                             ? "text-white/80"
                             : "text-gray-500"
-                        }`}
+                          }`}
                       >
                         {emp.role}
                       </p>
