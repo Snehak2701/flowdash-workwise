@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
+    
     "target": "ES2022",
     "module": "commonjs",
     "moduleResolution": "node",
 
     "rootDir": "src",
     "outDir": "dist",
-
-    "lib": ["ES2022"],
+    
+    "lib": ["ES2022", "DOM"],
     "types": ["node"],
+    
 
     "strict": true,
     "skipLibCheck": true,
@@ -18,12 +20,13 @@
     "exactOptionalPropertyTypes": true,
     "noImplicitAny": false,
 
-    "esModuleInterop": true,                 // <—
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
 
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true
+    
   },
   "include": ["src", "prisma/**/*.ts", "src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]

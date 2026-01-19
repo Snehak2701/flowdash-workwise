@@ -334,31 +334,68 @@ router.post(
   auth,
   requireRole("MANAGER", "PROJECT_MANAGER"),
   async (req, res) => {
-    const { id } = req.params;
-    console.log(id);
-    const { newAssigneeUserId, newEmployeeId } = req.body;
-    let assigneeId = newAssigneeUserId as string | undefined;
+    try {
+      const { id } = req.params;
+      const { newEmployeeId } = req.body;
 
-    if (!id) return res.status(400).json({ error: "task id required" });
+      if (!id || !newEmployeeId) {
+        return res.status(400).json({ error: "Task ID and employee required" });
+      }
 
-    if (!assigneeId && newEmployeeId) {
-      const emp = await prisma.employee.findUnique({
+      // 1️⃣ Fetch task with current assignee + designation
+      const task = await prisma.task.findUnique({
+        where: { id },
+        include: {
+          assignee: {
+            include: {
+              Employee: true,
+            },
+          },
+        },
+      });
+
+      if (!task || !task.assignee || !task.assignee.Employee[0]) {
+        return res.status(404).json({ error: "Task or assignee not found" });
+      }
+
+      const currentRoleTitle = task.assignee.Employee[0].roleTitle;
+
+      // 2️⃣ Fetch target employee
+      const targetEmployee = await prisma.employee.findUnique({
         where: { id: newEmployeeId },
       });
-      if (!emp) return res.status(400).json({ error: "invalid employee id" });
-      assigneeId = emp.userId;
+
+      if (!targetEmployee) {
+        return res.status(404).json({ error: "Target employee not found" });
+      }
+
+      // 3️⃣ 🔒 DESIGNATION CHECK
+      if (targetEmployee.roleTitle !== currentRoleTitle) {
+        return res.status(400).json({
+          error: `Task can only be moved to ${currentRoleTitle}`,
+        });
+      }
+
+      // 4️⃣ Transfer task
+      const updatedTask = await prisma.task.update({
+        where: { id },
+        data: {
+          assigneeId: targetEmployee.userId,
+          status: "TODO",
+        },
+      });
+
+      res.json({
+        message: "Task transferred successfully",
+        task: updatedTask,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to transfer task" });
     }
-    if (!assigneeId)
-      return res.status(400).json({ error: "assignee required" });
-
-    const updated = await prisma.task.update({
-      where: { id },
-      data: { assigneeId, status: "TODO" }, // reset to TODO on transfer (matches your UI)
-    });
-
-    res.json(updated);
   }
 );
+
 
 router.delete(
   "/:id",

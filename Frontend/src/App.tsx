@@ -17,6 +17,10 @@ import HrmManagerDashboard from "./pages/ProjectManager/hrmDashboardManager";
 import MainDashboard from "./pages/MainManager/mainDashboard";
 import { AuthProvider } from "./pages/AuthContext";
 import AssignmentDashboard from "./pages/MainManager/EmployeeAssignment";
+import OperatorMessages from "./pages/operatormessages";
+
+import ProtectedRoute from "./pages/ProtectedRoute";
+
 
 const queryClient = new QueryClient();
 
@@ -45,6 +49,15 @@ const App = () => (
             <Route path="/operator/hrm" element={<HrmDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
+            <Route
+  path="/operator/messages"
+  element={
+    <ProtectedRoute>
+      <OperatorMessages />
+    </ProtectedRoute>
+  }
+/>
+
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

@@ -1,3 +1,6 @@
+
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -378,9 +381,12 @@ export default function EmployeePerformanceDashboard() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/employees/performance`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get<{ employees: any[] }>(
+        `${API_BASE_URL}/employees/performance`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       
       // Backend returns roleTitle, map to role for frontend consistency
       const formattedEmployees = res.data.employees.map((emp: any) => ({
@@ -413,7 +419,7 @@ export default function EmployeePerformanceDashboard() {
     setSelectedEmployee(employeeInfo);
     
     try {
-      const res = await axios.get(
+      const res = await axios.get<{ employee: any; performance: PerformanceData }>(
         `${API_BASE_URL}/employees/${employeeId}/performance`,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -427,6 +433,7 @@ export default function EmployeePerformanceDashboard() {
         ...res.data.employee,
         role: res.data.employee.roleTitle || employeeInfo.role,
         performance: res.data.performance,
+        
       });
     } catch (err) {
       console.error(err);

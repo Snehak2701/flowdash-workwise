@@ -59,6 +59,7 @@ const SkeletonManagerDashboard = ({ PRIMARY_COLOR }) => {
       <div className="h-3 w-32 bg-gray-100 rounded mt-3"></div>
     </Card>
   );
+  
 
   // Helper component for a team row placeholder
   const TeamRowSkeleton = () => (

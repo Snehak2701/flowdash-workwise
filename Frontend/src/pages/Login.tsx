@@ -7,12 +7,25 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Users, BarChart3, Lock, LogIn, Loader2 } from "lucide-react"; // Added Lock, LogIn, Loader2
 import { useAuth } from "./AuthContext";
+import axios from "axios";
+
 
 // --- Colors based on inspiration ---
 const COLOR_PRIMARY = "#0000cc";
 const COLOR_ACCENT_ICON = "text-red-500";
+type LoginResponse = {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    role: "MANAGER" | "OPERATOR" | "PROJECT_MANAGER";
+  };
+};
+
 
 export default function Login() {
+  
+
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,66 +34,74 @@ export default function Login() {
   const { toast } = useToast();
   const { setUser } = useAuth();
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast({
-        title: "Error",
-        description: "Please enter email and password",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    setLoading(true);
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: "include",
-      });
+  if (!email || !password) {
+    toast({
+      title: "Error",
+      description: "Please enter email and password",
+      variant: "destructive",
+    });
+    return;
+  }
 
-      const data = await res.json();
+  setLoading(true);
 
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      // Store JWT and role in localStorage
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userRole", data.role);
-      localStorage.setItem("userEmail", data.email);
-
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${data.email}!`,
-      });
-
-      setUser({
-      id: data.userId,
-      email: data.email,
-      role: data.role.toLowerCase(),
+  try {
+    const res = await axios.post(`${API_BASE_URL}/auth/login`, {
+      email,
+      password,
     });
 
-      // Redirect to dashboard
-      navigate(`/${data.role.toLowerCase()}`);
-    } catch (err: any) {
-      toast({
-        title: "Login Failed",
-        description: err.message || "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    console.log("LOGIN RESPONSE:", res.data);
+
+    const data = res.data as LoginResponse;
+
+    const token = (res.data as any).token || (res.data as any).accessToken;
+    if (!token) {
+      throw new Error("Token missing from login response");
     }
-  };
+
+    const normalizedRole =
+      data.user.role === "PROJECT_MANAGER"
+        ? "project_manager"
+        : data.user.role.toLowerCase();
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("userId", data.user.id);
+    localStorage.setItem("userEmail", data.user.email);
+    localStorage.setItem("userRole", normalizedRole);
+
+    setUser({
+      id: data.user.id,
+      email: data.user.email,
+      role: normalizedRole as "operator" | "manager" | "project_manager",
+    });
+
+    navigate(`/${normalizedRole}`);
+
+    toast({
+      title: "Login Successful",
+      description: `Welcome back, ${data.user.email}!`,
+    });
+  } catch (err: any) {
+    toast({
+      title: "Login Failed",
+      description:
+        err?.response?.data?.message ||
+        err.message ||
+        "Something went wrong",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // const roleCards = [
   //   // Operator: Use deep blue for icon when not selected
@@ -150,7 +171,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  className="focus:border-[#0000cc] border-gray-30o"
+                  className="focus:border-[#0000cc] border-gray-300"
                 />
               </div>
 

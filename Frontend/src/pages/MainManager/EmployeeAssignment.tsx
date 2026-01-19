@@ -38,6 +38,13 @@ import {
   Pencil, // Added pencil icon for visual hint
 } from "lucide-react";
 import axios from "axios";
+interface ManagersApiResponse {
+  managers: any[];
+}
+
+interface NewJoinersApiResponse {
+  newJoiners: any[];
+}
 
 // Helper component for Manager/Employee details
 const DetailItem = ({ icon: Icon, label, value }) => (
@@ -181,32 +188,36 @@ export default function AssignmentDashboard() {
     }));
   };
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [managersRes, newJoinersRes] = await Promise.all([
-        axios.get(`${backendUrl}/projectManager/Manager_employee_list`, {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }),
-        axios.get(`${backendUrl}/projectManager/employee-assign/new-joiners`, {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        }),
-      ]);
+  const fetchData = async (): Promise<void> => {
+  setLoading(true);
+  try {
+    const managersRes = await axios.get<ManagersApiResponse>(
+      `${backendUrl}/projectManager/Manager_employee_list`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
+      }
+    );
 
-      if (managersRes.data?.managers) {
-        setManagers(transformManagerData(managersRes.data.managers));
+    const newJoinersRes = await axios.get<NewJoinersApiResponse>(
+      `${backendUrl}/projectManager/employee-assign/new-joiners`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
       }
-      if (newJoinersRes.data?.newJoiners) {
-        setNewEmployees(transformNewJoinerData(newJoinersRes.data.newJoiners));
-      }
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
+
+    // 🔥 THIS WILL STOP THE ERROR
+    setManagers(transformManagerData(managersRes.data.managers));
+    setNewEmployees(
+      transformNewJoinerData(newJoinersRes.data.newJoiners)
+    );
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchData();

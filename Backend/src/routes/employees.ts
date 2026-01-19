@@ -2,8 +2,8 @@ import { Router } from "express";
 import { requireRole } from "../middleware/role.js";
 import { auth } from "../middleware/auth.js";
 import prisma from "../db";
-import { requireAuth } from "../middleware/requireAuth.js";
-import { kcAssignRealmRole, kcCreateUser } from "../auth/kc-users.js";
+import bcrypt from "bcryptjs";
+
 import {
   startOfWeek,
   endOfWeek,
@@ -89,53 +89,67 @@ router.get(
     }
   }
 );
+router.post(
+  "/create",
+  auth,
+  requireRole("MANAGER", "PROJECT_MANAGER"),
+  async (req, res) => {
+    try {
+      const { email, password, name, roleTitle, department } = req.body;
 
-router.post("/create", requireAuth, async (req, res) => {
-  try {
-    const { email, name, roleTitle, department, role } = req.body;
+      if (!email || !password || !name) {
+        return res
+          .status(400)
+          .json({ error: "email, password, name required" });
+      }
 
-    // 1️⃣ Create user in Keycloak
-    const kcUser = await kcCreateUser({
-      email,
-      firstName: name,
-      tempPassword: "Temp@123",
-    });
-    await kcAssignRealmRole(kcUser.id, role);
+      // 1️⃣ Check if user already exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
 
-    // 2️⃣ Store in Prisma
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: "",
-        role,
-      },
-    });
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
 
-    await prisma.employee.create({
-      data: {
-        userId: user.id,
-        name,
-        roleTitle,
-        department,
-      },
-    });
+      // 2️⃣ Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3️⃣ Link with ExternalIdentity
-    await prisma.externalIdentity.create({
-      data: {
-        provider: "keycloak",
-        subject: kcUser.id,
-        email,
-        userId: user.id,
-      },
-    });
+      // 3️⃣ Create user in DB
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          role: "OPERATOR",
+        },
+      });
 
-    res.json({ success: true, message: "Employee created in Keycloak + DB" });
-  } catch (e: any) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
+      // 4️⃣ Create employee linked to manager
+      const employee = await prisma.employee.create({
+        data: {
+          userId: user.id,
+          name,
+          roleTitle: roleTitle ?? "Operator",
+          department,
+          managerId: req.user!.id,
+        },
+      });
+
+      res.status(201).json({
+        employee,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to create employee" });
+    }
   }
-});
+);
+
 
 // GET dashboard metrics
 router.get(
@@ -277,46 +291,7 @@ router.get("/me", auth, requireRole("OPERATOR"), async (req, res) => {
 });
 
 // Create employee + user (manager)
-router.post(
-  "/",
-  auth,
-  requireRole("MANAGER", "PROJECT_MANAGER"),
-  async (req, res) => {
-    const { email, password, name, roleTitle, department } = req.body;
-    if (!email || !password || !name)
-      return res.status(400).json({ error: "email, password, name required" });
 
-    const managerId = req.user!.id;
-
-    if (!managerId)
-      return res.status(400).json({ error: "Manager ID not found" });
-
-    const bcrypt = await import("bcrypt");
-    const hash = await bcrypt.hash(
-      password,
-      Number(process.env.BCRYPT_ROUNDS) || 10
-    );
-
-    const user = await prisma.user.create({
-      data: { email, password: hash, role: "OPERATOR" },
-    });
-
-    const employee = await prisma.employee.create({
-      data: {
-        userId: user.id,
-        name,
-        roleTitle: roleTitle ?? "Operator",
-        department,
-        managerId,
-      },
-    });
-
-    res.status(201).json({
-      employee,
-      user: { id: user.id, email: user.email, role: user.role },
-    });
-  }
-);
 
 // performace
 router.get(

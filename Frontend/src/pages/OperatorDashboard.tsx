@@ -54,6 +54,10 @@ interface Stats {
   completionRate: number;
   completionTrend: { week: string; rate: number }[];
 }
+interface OperatorDashboard {
+  tasks: Task[];
+  stats: Stats;
+}
 
 const COLOR_PRIMARY = "#0000cc";
 const COLOR_ACCENT_ICON = "text-red-500";
@@ -174,7 +178,10 @@ export default function OperatorDashboard() {
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/tasks/Dashboard`, {
+      const token = localStorage.getItem("token");
+console.log("TOKEN FROM LOCALSTORAGE:", token);
+
+      const response = await axios.get<OperatorDashboard>(`${API_BASE_URL}/tasks/dashboard`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -258,6 +265,36 @@ export default function OperatorDashboard() {
           height: 30,
           style: { fontSize: "12px" },
         };
+const handleStatusChange = async (
+  taskId: string,
+  status: Task["status"]
+) => {
+  try {
+    const res = await axios.patch<{ task: Task }>(
+      `${API_BASE_URL}/tasks/${taskId}/status`,
+      { status },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    const updatedTask: Task = res.data.task;
+
+    // ✅ Single, clean state update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId ? updatedTask : t
+      )
+    );
+
+  } catch (err: any) {
+    alert(err?.response?.data?.error || "Failed to update status");
+  }
+};
+
+
 
   return (
     <Layout>
@@ -465,12 +502,21 @@ export default function OperatorDashboard() {
                             {task.title}
                           </h4>
                           <div className="flex items-center gap-1 sm:gap-2 text-xs">
-                            <Badge
-                              variant="default"
-                              className={getStatusBadgeStyles(task.status)}
-                            >
-                              {task.status}
-                            </Badge>
+                            <select
+  value={task.status}
+  onChange={(e) =>
+    handleStatusChange(task.id, e.target.value as Task["status"])
+  }
+  className={`text-xs px-2 py-1 rounded border cursor-pointer ${getStatusBadgeStyles(
+    task.status
+  )}`}
+>
+  <option value="TODO">TODO</option>
+  <option value="WORKING">WORKING</option>
+  <option value="STUCK">STUCK</option>
+  <option value="DONE">DONE</option>
+</select>
+
                             <Badge
                               variant="default"
                               className={`capitalize ${getPriorityBadgeStyles(

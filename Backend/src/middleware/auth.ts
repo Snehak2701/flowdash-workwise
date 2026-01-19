@@ -6,10 +6,21 @@ export function auth(req: Request, res: Response, next: NextFunction) {
   if (!header?.startsWith("Bearer ")) return res.status(401).json({ error: "No token" });
   const token = header.slice(7);
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as Express.UserJWTPayload;
-    req.user = decoded;
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
+
+// normalize payload so routes work
+req.user = {
+  id: decoded.id || decoded.userId,
+  email: decoded.email,
+  role: decoded.role,
+};
+
+if (!req.user.id || !req.user.role) {
+  return res.status(401).json({ error: "Invalid token payload" });
+}
     next();
-  } catch {
+  } catch (error) { // <-- Capture the error object here
+    console.error("JWT Verification failed:", error); // <-- Log the specific error
     res.status(401).json({ error: "Invalid token" });
   }
 }

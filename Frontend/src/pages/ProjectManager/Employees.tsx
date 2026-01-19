@@ -62,6 +62,10 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+interface TasksResponse {
+  tasks: Task[];
+}
+
 
 // --- Type Definitions (omitted for brevity, assume they are the same) ---
 interface Comment {
@@ -978,12 +982,12 @@ export function EmployeeManagerDashboard() {
     // ... fetch logic
     setLoading(true);
     try {
-      const { data }: any = await axios.get<EmployeeResponse>(
-        `${API_BASE_URL}/employees/employees`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const { data } = await axios.get<EmployeeResponse>(`${API_BASE_URL}/employees/employees`, {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+});
+
       setEmployees(data.employees);
       setTaskCompletedCount(data.TaskCompletedCount);
     } catch (err) {
@@ -1055,7 +1059,7 @@ export function EmployeeManagerDashboard() {
     const fetchTasks = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(
+        const res = await axios.get<TasksResponse>(
           `${API_BASE_URL}/tasks/${employeeId}/completed`,
           {
             headers: {

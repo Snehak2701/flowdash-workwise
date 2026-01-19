@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; 
 import { Layout } from "@/components/Layout";
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+
 import {
     Select,
     SelectContent,
@@ -136,12 +139,30 @@ const SkeletonManagerDashboard = ({ PRIMARY_COLOR }) => {
 
 
 export default function ManagerDashboard() {
+   
+
+    const [employeeName, setEmployeeName] = useState("");
+const [employeeEmail, setEmployeeEmail] = useState("");
+const [employeeRole, setEmployeeRole] = useState("");
+const [employeeDepartment, setEmployeeDepartment] = useState("");
+
+
     const [isCreateEmpOpen, setIsCreateEmpOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState<any>(null);
+    const [selectedRole, setSelectedRole] = useState("ALL");
+
+// demo: task requires this role
+const taskRequiredRole = "Developer";
+
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const PRIMARY_COLOR = "#0000cc";
+    
+    const canAssignTask = (employeeRole: string, taskRole: string) => {
+  return employeeRole.toLowerCase() === taskRole.toLowerCase();
+};
+
 
     useEffect(() => {
         async function fetchDashboard() {
@@ -149,11 +170,23 @@ export default function ManagerDashboard() {
             await new Promise(resolve => setTimeout(resolve, 1000)); 
             
             try {
-                const res = await fetch(`${API_BASE_URL}/employees/dashboard`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`, // adjust if using cookies
-                    },
-                });
+                
+                const token = localStorage.getItem("token");
+                console.log("TOKEN USED:", token);
+
+                const res = await fetch(
+  `${API_BASE_URL}/employees/dashboard`,
+  {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
+
+                
                 if (!res.ok) throw new Error("Failed to fetch dashboard data");
                 const data = await res.json();
                 
@@ -178,10 +211,15 @@ export default function ManagerDashboard() {
                 }
                 
                 setLoading(false);
-            } catch (error) {
-                console.error(error);
-                setLoading(false);
+            
+            } 
+            catch (error) {
+            console.error("Dashboard fetch error:", error);
+            setLoading(false);
             }
+
+
+
         }
         fetchDashboard();
     }, []);
@@ -212,15 +250,56 @@ export default function ManagerDashboard() {
         </div>
     </Layout>
 
-    const {
-        totalEmployees,
-        activeEmployees,
-        totalTasks,
-        completionRate,
-        weeklyData,
-        performanceData,
-        teamOverview,
-    } = dashboardData;
+        const {
+            totalEmployees,
+            activeEmployees,
+            totalTasks,
+            completionRate,
+            weeklyData,
+            performanceData,
+            teamOverview,
+        } = dashboardData;
+    
+        const employeeRoleMap = (teamOverview || []).reduce((acc: any, emp: any) => {
+      const key = emp.userId ?? emp.id ?? emp.email ?? emp.name;
+      acc[key] = emp.role ?? emp.roleTitle ?? emp.role;
+      return acc;
+    }, {});
+    const handleCreateEmployee = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/employees/create`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: employeeName,
+          email: employeeEmail,
+          roleTitle: employeeRole,
+          department: employeeDepartment,
+          password: "operator123", // default password
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to create employee");
+    }
+
+    // success
+    setIsCreateEmpOpen(false);
+    alert("Employee created successfully");
+  } catch (err: any) {
+    alert(err.message);
+  }
+};
+
 
     return (
         <Layout>
@@ -246,40 +325,58 @@ export default function ManagerDashboard() {
                             <div className="space-y-4 pt-4">
                                 <div className="space-y-2">
                                     <Label>Employee Name</Label>
-                                    <Input placeholder="Enter full name" />
+                                    <Input
+  value={employeeName}
+  onChange={(e) => setEmployeeName(e.target.value)}
+  placeholder="Enter full name"
+/>
+
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Email</Label>
-                                    <Input type="email" placeholder="employee@company.com" />
+                                    <Input
+  type="email"
+  value={employeeEmail}
+  onChange={(e) => setEmployeeEmail(e.target.value)}
+  placeholder="employee@company.com"
+/>
+
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Role</Label>
-                                    <Select>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="developer">Developer</SelectItem>
-                                            <SelectItem value="designer">Designer</SelectItem>
-                                            <SelectItem value="tester">QA Tester</SelectItem>
-                                            <SelectItem value="analyst">Analyst</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Select onValueChange={setEmployeeRole}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select role" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="Developer">Developer</SelectItem>
+    <SelectItem value="Designer">Designer</SelectItem>
+    <SelectItem value="Tester">Tester</SelectItem>
+  </SelectContent>
+</Select>
+
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Department</Label>
-                                    <Select>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select department" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="engineering">Engineering</SelectItem>
-                                            <SelectItem value="design">Design</SelectItem>
-                                            <SelectItem value="operations">Operations</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Select onValueChange={setEmployeeDepartment}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select department" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="Engineering">Engineering</SelectItem>
+    <SelectItem value="Design">Design</SelectItem>
+    <SelectItem value="Operations">Operations</SelectItem>
+  </SelectContent>
+</Select>
+
                                 </div>
-                                <Button className="w-full bg-[#0000cc] hover:bg-[#0000cc]/90 text-white">Create Employee</Button>
+                                <Button
+  type="button"
+  onClick={handleCreateEmployee}
+  className="w-full bg-[#0000cc] hover:bg-[#0000cc]/90 text-white"
+>
+  Create Employee
+</Button>
                             </div>
                         </DialogContent>
                     </Dialog>
@@ -367,62 +464,62 @@ export default function ManagerDashboard() {
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-[#0000cc]">Team Overview</h3>
                         <div className="flex items-center gap-2">
-                            <Input placeholder="Search employees..." className="w-64 border-gray-300" />
-                            <Select>
-                                <SelectTrigger className="w-32">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="leave">On Leave</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+  <Input placeholder="Search employees..." className="w-56 border-gray-300" />
+<div className="flex items-center gap-2"></div>
+  <Select onValueChange={setSelectedRole} defaultValue="ALL">
+    <SelectTrigger className="w-40">
+      <SelectValue placeholder="Filter by role" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="ALL">All Roles</SelectItem>
+      <SelectItem value="Developer">Developer</SelectItem>
+      <SelectItem value="Designer">Designer</SelectItem>
+      <SelectItem value="Tester">Tester</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
                     </div>
 
                     <div className="space-y-4">
-                        {teamOverview.map((emp: any) => (
-                            <div
-                                key={emp.id}
-                                className="p-4 rounded-lg border border-gray-200 hover:border-[#0000cc]/40 transition-all bg-white hover:shadow-md"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4 flex-1">
-                                        <div className="h-12 w-12 rounded-full bg-[#0000cc] flex items-center justify-center text-white font-semibold">
-                                            {emp.name.split(" ").map((n: string) => n[0]).join("")}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold text-gray-800">{emp.name}</h4>
-                                                <Badge
-                                                    variant={emp.status === "Active" ? "success" : "default"}
-                                                    className={emp.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}
-                                                >
-                                                    {emp.status}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-sm text-gray-500">{emp.role}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-8">
-                                        <div className="text-center">
-                                            <p className="text-sm text-gray-500">Tasks</p>
-                                            <p className="text-lg font-semibold text-[#0000cc]">{emp.tasksCompleted}</p>
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-sm text-gray-500">Hours</p>
-                                            <p className="text-lg font-semibold text-[#0000cc]">{emp.hoursLogged}h</p>
-                                        </div>
-                                        <div className="text-center min-w-[80px]">
-                                            <p className="text-sm text-gray-500 mb-1">Efficiency</p>
-                                            <Progress value={emp.efficiency} className="h-2 bg-blue-100" />
-                                            <p className="text-xs font-medium mt-1 text-[#0000cc]">{emp.efficiency}%</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                        {teamOverview.filter((emp: any) =>
+    selectedRole === "ALL" ? true : emp.role === selectedRole
+  ).map((emp: any) => {
+  const taskRequiredRole = "Developer"; // demo purpose
+
+  const allowed = canAssignTask(emp.role, taskRequiredRole);
+
+  return (
+    <div
+      key={emp.id}
+      className={`p-4 rounded-lg border transition-all ${
+        allowed
+          ? "border-blue-400 bg-blue-50"
+          : "border-gray-200 bg-gray-50 opacity-60"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="font-semibold">{emp.name}</h4>
+         <p className="text-sm text-gray-500">{emp.roleTitle}</p>
+
+        </div>
+
+        <Button
+          disabled={!allowed}
+          className={`${
+            allowed
+              ? "bg-[#0000cc] text-white"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+        >
+          Assign Task
+        </Button>
+      </div>
+    </div>
+  );
+})}
+
                     </div>
                 </Card>
             </div>

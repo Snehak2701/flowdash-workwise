@@ -34,6 +34,22 @@ export const Layout = ({ children }: LayoutProps) => {
   if (!user) return <div className="p-6">Unauthorized</div>;
 
   const role = user.role.toLowerCase();
+  // Derive name from email
+const name =
+  user.email
+    ?.split("@")[0]
+    .replace(/\./g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Convert role to readable post
+const postMap: Record<string, string> = {
+  manager: "Manager",
+  project_manager: "Project Manager",
+  operator: "Operator",
+};
+
+const post = postMap[role] || "User";
+
   const handleLogout = async () => {
     try {
       await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/logout`, {
@@ -77,6 +93,8 @@ export const Layout = ({ children }: LayoutProps) => {
     if (role === "operator") {
         return [
           ...common,
+          { icon: Users, label: "Messages", path: "/operator/messages" },
+
           { icon: Clock, label: "My Task", path: "/timesheet" },
           { icon: PersonStanding, label: "My HRM", path: "/operator/hrm" },
         ];
@@ -129,6 +147,24 @@ export const Layout = ({ children }: LayoutProps) => {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
+            const role = user.role.toLowerCase();
+            // Derive display name from email
+const name =
+  user.email
+    ?.split("@")[0]
+    .replace(/\./g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Convert role to readable post
+const postMap: Record<string, string> = {
+  manager: "Manager",
+  project_manager: "Project Manager",
+  operator: "Operator",
+};
+
+const post = postMap[role] || "User";
+
+
 
             return (
               <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)}>
@@ -159,15 +195,20 @@ export const Layout = ({ children }: LayoutProps) => {
 
         {/* Footer */}
         <div className="border-t border-white/20 p-4">
-          <div className="bg-white/10 rounded-lg p-3 text-sm mb-3">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-white/80" />
-              <span className="capitalize">{role}</span>
-            </div>
-            <p className="text-xs text-white/70 truncate">
-              {user.email}
-            </p>
-          </div>
+         <div className="bg-white/10 rounded-lg p-3 text-sm mb-3">
+  <div className="flex flex-col">
+    <span className="font-semibold text-white text-sm truncate">
+      {name}
+    </span>
+    <span className="text-xs text-white/70">
+      {post}
+    </span>
+    <span className="text-[11px] text-white/50 truncate mt-1">
+      {user.email}
+    </span>
+  </div>
+</div>
+
           <Button
             variant="ghost"
             onClick={handleLogout}

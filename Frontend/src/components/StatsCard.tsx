@@ -47,34 +47,41 @@ export const StatsCard = ({
   const defaultValueClass = "text-2xl sm:text-3xl"; 
 
   return (
-    // Card padding is reduced slightly on mobile (p-4) if you use p-4 in OperatorDashboard
-    // Added h-full to Card for alignment consistency across the grid
-    <Card className="p-4 sm:p-6 h-full flex flex-col justify-between hover:shadow-lg transition-shadow"> 
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          {/* Title is small on mobile */}
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          
-          {/* Applied the responsive value class here */}
-          <p className={cn("mt-2 font-bold", defaultValueClass, valueClassName)}>{value}</p>
-          
-          {trend && (
-            <p
-              className={`mt-1 text-xs ${ // Reduced margin top (mt-1) and ensured text-xs for trend on mobile
-                trendUp ? "text-success" : "text-destructive"
-              }`}
-            >
-              {trend}
-            </p>
-          )}
-        </div>
-        
-        {/* 🎯 Applied RESPONSIVE PADDING and ICON SIZING 🎯 */}
-        <div className={`rounded-lg ${iconContainerClass}`}>
-          {/* Applied the responsive icon class */}
-          <Icon className={cn(defaultIconClass, iconClassName)} />
-        </div>
+  <Card className="p-4 sm:p-6 h-full flex flex-col justify-between hover:shadow-lg transition-shadow">
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <p
+          className="text-sm font-medium text-muted-foreground"
+          title={title}
+          aria-label={title}
+        >
+          {title}
+        </p>
+
+        {/* ✅ VALUE — RENDERED ONLY ONCE */}
+        <p className={cn("mt-2 font-bold", defaultValueClass, valueClassName)}>
+          {value}
+        </p>
+
+        {/* ✅ TREND — TEXT ONLY */}
+        {trend && (
+          <p
+            className={cn(
+              "mt-1 text-xs flex items-center gap-1",
+              trendUp ? "text-success" : "text-destructive"
+            )}
+          >
+            <span>{trendUp ? "▲" : "▼"}</span>
+            <span>{trend}</span>
+          </p>
+        )}
       </div>
-    </Card>
-  );
-};
+
+      <div className={`rounded-lg ${iconContainerClass}`}>
+        <Icon className={cn(defaultIconClass, iconClassName)} />
+      </div>
+    </div>
+  </Card>
+
+);
+}

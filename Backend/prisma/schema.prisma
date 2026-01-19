@@ -51,6 +51,9 @@ model User {
 
   ExternalIdentity ExternalIdentity[]
   taskWorkLogs     TaskWorkLog[]
+  sentMessages     Message[] @relation("SentMessages")
+receivedMessages Message[] @relation("ReceivedMessages")
+
 }
 
 model Employee {
@@ -141,4 +144,14 @@ model ExternalIdentity {
   userId    String?
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  text       String
+  createdAt  DateTime @default(now())
+
+  sender     User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User @relation("ReceivedMessages", fields: [receiverId], references: [id])
 }
